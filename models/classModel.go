@@ -14,5 +14,6 @@ type Class struct {
 	Teacher_ID  string             `json:"teacher_id,omitempty"`
 	Students    *[]string          `json:"students,omitempty"`
 	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
-	Class_ID    string             `json:"class_id"`
+	UpdatedAt   time.Time          `bson:"updated_at" json:"updated_at"`
+	Class_ID    string             `json:"class_id" bson:"class_id"`
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin" // Add this import
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -27,114 +28,6 @@ var parentCollection *mongo.Collection = database.OpenCollection(database.Client
 
 var timetableCollection *mongo.Collection = database.OpenCollection(database.Client, "timetable")
 
-// Student Controllers
-func GetStudents() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		defer cancel()
-
-		recordPerPage, err := strconv.Atoi(c.Query("recordPerPage"))
-		if err != nil || recordPerPage < 1 {
-			recordPerPage = 10
-		}
-
-		page, err1 := strconv.Atoi(c.Query("page"))
-		if err1 != nil || page < 1 {
-			page = 1
-		}
-
-		startIndex := (page - 1) * recordPerPage
-
-		matchStage := bson.D{{Key: "$match", Value: bson.D{{}}}}
-
-		groupStage := bson.D{
-			{Key: "$group", Value: bson.D{
-				{Key: "_id", Value: nil},
-				{Key: "total_count", Value: bson.D{{Key: "$sum", Value: 1}}},
-				{Key: "data", Value: bson.D{{Key: "$push", Value: "$$ROOT"}}},
-			}},
-		}
-
-		projectStage := bson.D{
-			{Key: "$project", Value: bson.D{
-				{Key: "_id", Value: 0},
-				{Key: "total_count", Value: 1},
-				{Key: "students_list", Value: bson.D{{Key: "$slice", Value: bson.A{"$data", startIndex, recordPerPage}}}},
-			}},
-		}
-
-		result, err := studentCollection.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, projectStage})
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occured while fetching the students"})
-			return
-		}
-
-		var allStudents []bson.M
-
-		if err = result.All(ctx, &allStudents); err != nil {
-			log.Fatal(err)
-		}
-		c.JSON(http.StatusOK, allStudents)
-	}
-}
-
-func GetStudent() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		defer cancel()
-		studentID := c.Param("student_id")
-		var student models.Student
-
-		err := studentCollection.FindOne(ctx, bson.M{"student_id": studentID}).Decode(&student)
-		defer cancel()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while fetching the student you requested"})
-		}
-
-		c.JSON(http.StatusOK, student)
-
-	}
-}
-
-func CreateStudent() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		defer cancel()
-		var class models.Class
-		var student models.Student
-		var validate = validator.New()
-
-		if err := c.BindJSON(&student); err != nil{
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		validationErr := validate.Struct(student)
-
-		if validationErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
-			return
-		}
-
-		err := classCollection.FindOne(ctx, bson.M{"class_id":student.Class_ID}).Decode(&class)
-		defer cancel()
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "menu was not found"})
-			return
-		}
-
-		student.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		student.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	student.ID = primitive.NewObjectID()
-	}
-}
-
-func UpdateStudent() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Implementation goes here
-	}
-}
 
 // Teacher Controllers
 func GetTeachers() gin.HandlerFunc {
