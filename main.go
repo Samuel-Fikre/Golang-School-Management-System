@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"sms-system/database"
+	middleware "sms-system/middleware"
 	"sms-system/routes"
 
 	"github.com/gin-gonic/gin"
@@ -28,14 +29,14 @@ func main() {
 
 	router.Use(gin.Logger())
 
-	router.Use(middleware.Authentication)
+	router.Use(middleware.Authentication())
 
 	routes.AdminRoutes(router)
 	routes.TeacherRoutes(router)
 	routes.StudentRoutes(router)
-	routes.ParentRoutes(router)
-	routes.AuthRoutes(router)
-	routes.NewsRoutes(router)
+	//routes.ParentRoutes(router)
+	//routes.AuthRoutes(router)
+	//routes.NewsRoutes(router)
 
 	router.Run(":" + port)
 }

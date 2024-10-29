@@ -7,7 +7,7 @@ import (
 )
 
 func StudentRoutes(incomingRoutes *gin.Engine) {
-	incomingRoutes.GET("/student/:student_id", controller.GetStudent())
-	incomingRoutes.GET("/timetable/:class_id", controller.GetTimeTable())
-	incomingRoutes.GET("/grades/:grade_id", controller.GetGrade())
+	incomingRoutes.GET("/st/student/:student_id", controller.GetStudent())
+	incomingRoutes.GET("/st/timetable/:class_id", controller.GetTimeTable())
+	incomingRoutes.GET("/st/grades/:grade_id", controller.GetGrade())
 }

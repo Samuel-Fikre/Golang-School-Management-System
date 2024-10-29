@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	helper "sms-system/helpers"
@@ -64,6 +63,10 @@ func GetTeachers() gin.HandlerFunc {
 
 		result, err := teacherCollection.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, projectStage})
 
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while listing teachers"})
+		}
+
 		var allTeachers []bson.M
 
 		if err = result.All(ctx, &allTeachers); err != nil {
@@ -120,8 +123,7 @@ func CreateTeacher() gin.HandlerFunc {
 
 		result, insertErr := teacherCollection.InsertOne(ctx, teacher)
 		if insertErr != nil {
-			msg := fmt.Sprintf("Teacher item was not created")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Teacher item was not created"})
 			return
 		}
 
@@ -153,10 +155,10 @@ func UpdateTeacher() gin.HandlerFunc {
 			updateObj = append(updateObj, bson.E{Key: "age", Value: teacher.Age})
 		}
 		if teacher.Email != nil {
-			updateObj = append(updateObj, bson.E{Key: "email", Value: *&teacher.Email})
+			updateObj = append(updateObj, bson.E{Key: "email", Value: teacher.Email})
 		}
 		if teacher.Phone != "" {
-			updateObj = append(updateObj, bson.E{Key: "phone", Value: *&teacher.Phone})
+			updateObj = append(updateObj, bson.E{Key: "phone", Value: teacher.Phone})
 		}
 
 		if teacher.ClassID != "" {

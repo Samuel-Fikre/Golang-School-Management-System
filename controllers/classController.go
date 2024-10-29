@@ -64,6 +64,7 @@ func CreateClass() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 		var class models.Class
+		var timetable models.Timetable
 		var validate = validator.New()
 
 		if err := c.BindJSON(&class); err != nil {
@@ -78,11 +79,23 @@ func CreateClass() gin.HandlerFunc {
 		}
 		defer cancel()
 
+		if class.TimetableID != "" {
+			err := timetableCollection.FindOne(ctx, bson.M{"timetable_id": class.TimetableID}).Decode(&timetable)
+
+			defer cancel()
+
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while fetching the timetable"})
+			}
+			return
+
+		}
+
 		class.CreatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 		class.ID = primitive.NewObjectID()
 		// this line converts the newly generated ObjectID (which is used as the primary key for the food item in MongoDB) into a hexadecimal string representation.
-		class.Class_ID = class.ID.Hex()
+		class.ClassID = class.ID.Hex()
 		//class.Category = class.Category
 
 		result, err := classCollection.InsertOne(ctx, class)
@@ -105,6 +118,7 @@ func UpdateClass() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		var class models.Class
+		var timetable models.Timetable
 		defer cancel()
 
 		if err := c.BindJSON(&class); err != nil {
@@ -124,6 +138,19 @@ func UpdateClass() gin.HandlerFunc {
 
 		if class.Description != nil {
 			updateObj = append(updateObj, bson.E{Key: "description", Value: class.Description})
+		}
+
+		if class.TimetableID != "" {
+			err := classCollection.FindOne(ctx, bson.M{"table_id": class.TimetableID}).Decode(&timetable)
+
+			defer cancel()
+			if err != nil {
+				msg := "TimeTable was not found"
+				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+				return
+			}
+
+			updateObj = append(updateObj, bson.E{Key: "table", Value: class.TimetableID})
 		}
 
 		class.UpdatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))

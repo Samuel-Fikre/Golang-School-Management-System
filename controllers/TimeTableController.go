@@ -74,7 +74,7 @@ func CreateTimeTable() gin.HandlerFunc {
 		table.CreatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		table.UpdatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		table.ID = primitive.NewObjectID()
-		table.Timetable_ID = table.ID.Hex()
+		table.TimetableID = table.ID.Hex()
 		result, insertErr := timetableCollection.InsertOne(ctx, table)
 		if insertErr != nil {
 			msg := "Time Table was not created"
