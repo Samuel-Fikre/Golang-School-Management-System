@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"sms-system/database"
+	helper "sms-system/helpers"
 	"sms-system/models"
 	"strconv"
 	"time"
@@ -17,19 +17,25 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var studentCollection *mongo.Collection = database.OpenCollection(database.Client, "students")
+// var studentCollection *mongo.Collection = database.OpenCollection(database.Client, "students")
 
-var teacherCollection *mongo.Collection = database.OpenCollection(database.Client, "teachers")
+// var teacherCollection *mongo.Collection = database.OpenCollection(database.Client, "teachers")
 
-var classCollection *mongo.Collection = database.OpenCollection(database.Client, "class")
+// var classCollection *mongo.Collection = database.OpenCollection(database.Client, "class")
 
-var parentCollection *mongo.Collection = database.OpenCollection(database.Client, "parents")
+// var parentCollection *mongo.Collection = database.OpenCollection(database.Client, "parents")
 
-var timetableCollection *mongo.Collection = database.OpenCollection(database.Client, "timetable")
+// var timetableCollection *mongo.Collection = database.OpenCollection(database.Client, "timetable")
 
 // Student Controllers
 func GetStudents() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		if err := helper.CheckUserType(c, "ADMIN"); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
@@ -116,7 +122,7 @@ func CreateStudent() gin.HandlerFunc {
 			return
 		}
 
-		err := classCollection.FindOne(ctx, bson.M{"class_id": student.Class_ID}).Decode(&class)
+		err := classCollection.FindOne(ctx, bson.M{"class_id": student.ClassID}).Decode(&class)
 		defer cancel()
 
 		if err != nil {
@@ -124,12 +130,12 @@ func CreateStudent() gin.HandlerFunc {
 			return
 		}
 
-		student.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		student.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		student.CreatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		student.UpdatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		student.ID = primitive.NewObjectID()
-		student.Student_ID = student.ID.Hex()
+		student.StudentID = student.ID.Hex()
 
-		result, insertErr := foodCollection.InsertOne(ctx, food)
+		result, insertErr := studentCollection.InsertOne(ctx, student)
 		if insertErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": insertErr.Error()})
 			return
@@ -154,7 +160,7 @@ func UpdateStudent() gin.HandlerFunc {
 
 		var updateObj primitive.D
 
-		if student.Name != nil {
+		if student.Name != "" {
 			updateObj = append(updateObj, bson.E{Key: "name", Value: student.Name})
 		}
 
@@ -168,8 +174,8 @@ func UpdateStudent() gin.HandlerFunc {
 			updateObj = append(updateObj, bson.E{Key: "phone", Value: *student.Phone})
 		}
 
-		if student.Class_ID != nil {
-			err := classCollection.FindOne(ctx, bson.M{"class_id": student.Class_ID}).Decode(&class)
+		if student.ClassID != "" {
+			err := classCollection.FindOne(ctx, bson.M{"class_id": student.ClassID}).Decode(&class)
 			defer cancel()
 
 			if err != nil {
@@ -177,34 +183,34 @@ func UpdateStudent() gin.HandlerFunc {
 				return
 			}
 
-			updateObj = append(updateObj, bson.E{Key: "class", Value: student.Class_ID})
-
-			upsert := true
-
-			filter := bson.M{"student_id": studentID}
-
-			opt := options.UpdateOptions{
-				Upsert: &upsert,
-			}
-
-			result, err := studentCollection.UpdateOne(
-				ctx,
-				filter,
-				bson.D{
-					{Key: "$set", Value: updateObj},
-				},
-				&opt,
-			)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Student Individual update failed"})
-			}
-
-			c.JSON(http.StatusOK, result)
-
+			updateObj = append(updateObj, bson.E{Key: "class", Value: student.ClassID})
 		}
 
 		updateObj = append(updateObj, bson.E{Key: "enrolled", Value: student.Enrolled})
 		updateObj = append(updateObj, bson.E{Key: "updated_at", Value: time.Now()})
 
+		upsert := true
+
+		filter := bson.M{"student_id": studentID}
+
+		opt := options.UpdateOptions{
+			Upsert: &upsert,
+		}
+
+		result, err := studentCollection.UpdateOne(
+			ctx,
+			filter,
+			bson.D{
+				{Key: "$set", Value: updateObj},
+			},
+			&opt,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Student Individual update failed"})
+		}
+
+		c.JSON(http.StatusOK, result)
+
 	}
+
 }

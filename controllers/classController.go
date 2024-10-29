@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	helper "sms-system/helpers"
 	"sms-system/models"
 	"time"
 
@@ -16,6 +17,12 @@ import (
 
 func GetClasses() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		if err := helper.CheckUserType(c, "ADMIN"); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		result, err := classCollection.Find(context.TODO(), bson.M{})
 		defer cancel()
@@ -128,12 +135,22 @@ func UpdateClass() gin.HandlerFunc {
 			Upsert: &upsert,
 		}
 
-		result, err := menuCollection.UpdateOne(
+		result, err := classCollection.UpdateOne(
 			ctx, filter, bson.D{
 				{Key: "$set", Value: updateObj},
 			},
 			&opt,
 		)
+
+		if err != nil {
+			msg := "class item update failed"
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			return
+		}
+
+		defer cancel()
+
+		c.JSON(http.StatusOK, result)
 
 	}
 

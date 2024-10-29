@@ -12,11 +12,11 @@ type Student struct {
 	Age  int                `json:"age" validate:"required,min=2,max=100"`
 	// Pointer (*string): This makes Email optional, allowing it to be nil if the user doesn’t provide an email.
 	// Validation (validate:"email"): This doesn’t make the field required but only validates the field if it is present. If Email is included, it must match a valid email pattern.
-	Email      *string   `json:"email,omitempty" validate:"email"`
-	Phone      *string   `json:"phone,omitempty"`
-	Enrolled   bool      `json:"enrolled"`
-	CreatedAt  time.Time `bson:"created_at" json:"created_at"`
-	UpdatedAt  time.Time `bson:"updated_at" json:"updated_at"`
-	Student_ID string    `bson:"student_id"  json:"student_id"`
-	Class_ID   string    `bson:"class_id" json:"class_id"`
+	Email     *string   `json:"email,omitempty" validate:"email"`
+	Phone     *string   `json:"phone,omitempty"`
+	Enrolled  bool      `json:"enrolled"`
+	CreatedAt time.Time `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
+	StudentID string    `bson:"student_id"  json:"student_id"`
+	ClassID   string    `bson:"class_id" json:"class_id"`
 }
